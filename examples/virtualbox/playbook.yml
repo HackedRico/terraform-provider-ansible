@@ -1,0 +1,36 @@
+---
+- name: VirtualBox Windows Server Provisioning Test
+  hosts: dc
+  gather_facts: false
+
+  tasks:
+    - name: Display inventory hostname and passed variables
+      debug:
+        msg: |
+          Inventory Hostname: {{ inventory_hostname }}
+          Ansible Host (IP): {{ ansible_host | default('not set') }}
+          Passed hostname extra var: {{ hostname | default('not set') }}
+          DNS Domain: {{ dns_domain_name | default('not set') }}
+          Private IP: {{ private_ip_address | default('not set') }}
+
+    - name: Test connection to Windows host via WinRM
+      ansible.builtin.win_ping:
+      register: ping_result
+
+    - name: Show ping result
+      debug:
+        var: ping_result
+
+    - name: Get Windows host information
+      ansible.windows.win_shell: |
+        $info = @{
+          ComputerName = $env:COMPUTERNAME
+          IPAddress = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.InterfaceAlias -notlike "*Loopback*"} | Select-Object -First 1).IPAddress
+          OSVersion = (Get-CimInstance Win32_OperatingSystem).Caption
+        }
+        $info | ConvertTo-Json
+      register: host_info
+
+    - name: Display Windows host info
+      debug:
+        msg: "{{ host_info.stdout | from_json }}"

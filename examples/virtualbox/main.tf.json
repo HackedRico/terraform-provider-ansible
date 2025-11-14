@@ -1,0 +1,111 @@
+{
+  "terraform": {
+    "required_providers": {
+      "ansible": {
+        "source": "ansible/ansible",
+        "version": "~> 1.3.0"
+      },
+      "virtualbox": {
+        "source": "terra-farm/virtualbox",
+        "version": "0.2.2-alpha.1"
+      }
+    }
+  },
+  "provider": {
+    "ansible": [{}],
+    "virtualbox": [{}]
+  },
+  "resource": {
+    "ansible_group": {
+      "dc_group": {
+        "name": "dc",
+        "children": [],
+        "variables": {}
+      },
+      "tag_Just_Created_dc_group": {
+        "name": "tag_Just_Created_dc",
+        "children": [],
+        "variables": {}
+      },
+      "tag_os_windows_group": {
+        "name": "tag_os_windows",
+        "children": [],
+        "variables": {}
+      }
+    },
+    "virtualbox_vm": {
+      "onprem-MicrosoftWindowsServer-windows-srv-addc": {
+        "name": "windows-srv-addc",
+        "image": "~/VirtualBox VMs/windows-server-2022.box",
+        "cpus": 1,
+        "memory": "2058 mib",
+        "network_adapter": [
+          {
+            "device": "IntelPro1000MTServer",
+            "host_interface": "enp6s18",
+            "type": "bridged"
+          }
+        ],
+        "status": "running"
+      }
+    },
+    "ansible_host": {
+      "onprem_windows-srv-addc": {
+        "depends_on": [
+          "virtualbox_vm.onprem-MicrosoftWindowsServer-windows-srv-addc"
+        ],
+        "name": "${virtualbox_vm.onprem-MicrosoftWindowsServer-windows-srv-addc.name}",
+        "groups": [
+          "${ansible_group.tag_os_windows_group.name}",
+          "${ansible_group.tag_Just_Created_dc_group.name}",
+          "${ansible_group.dc_group.name}"
+        ],
+        "variables": {
+          "ansible_connection": "winrm",
+          "ansible_host": "${virtualbox_vm.onprem-MicrosoftWindowsServer-windows-srv-addc.network_adapter.0.ipv4_address}",
+          "ansible_user": "Administrator",
+          "ansible_password": "vagrant123!",
+          "ansible_port": "5985",
+          "ansible_winrm_scheme": "http",
+          "ansible_winrm_server_cert_validation": "ignore",
+          "ansible_winrm_transport": "basic",
+          "ansible_python_interpreter": "auto_silent",
+          "dns_domain_name": "example.local",
+          "domain_netbios_name": "EXAMPLE",
+          "private_ip_address": "${virtualbox_vm.onprem-MicrosoftWindowsServer-windows-srv-addc.network_adapter.0.ipv4_address}",
+          "windows_password": "vagrant123!"
+        }
+      }
+    },
+    "ansible_playbook": {
+      "onprem_windows-srv-addc_ad_playbook": {
+        "depends_on": [
+          "virtualbox_vm.onprem-MicrosoftWindowsServer-windows-srv-addc",
+          "ansible_host.onprem_windows-srv-addc",
+          "ansible_group.dc_group",
+          "ansible_group.tag_Just_Created_dc_group",
+          "ansible_group.tag_os_windows_group"
+        ],
+        "playbook": "${path.module}/playbook.yml",
+        "name": "${virtualbox_vm.onprem-MicrosoftWindowsServer-windows-srv-addc.name}",
+        "groups": ["dc"],
+        "extra_vars": "${ansible_host.onprem_windows-srv-addc.variables}",
+        "tags": ["provision"],
+        "verbosity": 2,
+        "ignore_playbook_failure": false
+      }
+    }
+  },
+  "output": {
+    "vm_name": {
+      "value": "${virtualbox_vm.onprem-MicrosoftWindowsServer-windows-srv-addc.name}"
+    },
+    "vm_ip": {
+      "value": "${virtualbox_vm.onprem-MicrosoftWindowsServer-windows-srv-addc.network_adapter.0.ipv4_address}"
+    },
+    "temp_inventory_file": {
+      "value": "${ansible_playbook.onprem_windows-srv-addc_ad_playbook.temp_inventory_file}",
+      "description": "Path to the temporary inventory file (preserved for debugging)"
+    }
+  }
+}
