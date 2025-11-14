@@ -691,17 +691,17 @@ func resourcePlaybookUpdate(ctx context.Context, data *schema.ResourceData, _ in
 		tflog.Error(ctx, fmt.Sprintf("LOG [ansible-playbook]: didn't wait for playbook to execute: %v", err))
 	}
 
-	diagsFromUtils := providerutils.RemoveFile(tempInventoryFile)
+	// diagsFromUtils := providerutils.RemoveFile(tempInventoryFile)
 
-	diags = append(diags, diagsFromUtils...)
+	// diags = append(diags, diagsFromUtils...)
 
-	if err := data.Set("temp_inventory_file", ""); err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "ERROR [ansible-playbook]: couldn't set 'temp_inventory_file'!",
-			Detail:   ansiblePlaybook,
-		})
-	}
+	// if err := data.Set("temp_inventory_file", ""); err != nil {
+	// 	diags = append(diags, diag.Diagnostic{
+	// 		Severity: diag.Error,
+	// 		Summary:  "ERROR [ansible-playbook]: couldn't set 'temp_inventory_file'!",
+	// 		Detail:   ansiblePlaybook,
+	// 	})
+	// }
 
 	// *******************************************************************************
 
