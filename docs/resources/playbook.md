@@ -14,12 +14,25 @@ Provides an Ansible playbook resource.
 ```terraform
 resource "ansible_playbook" "playbook" {
   playbook   = "playbook.yml"
-  name       = "host-1.example.com"
+  name       = ansible_host.host.name
   replayable = true
+  groups     = ansible_host.host.groups
 
   extra_vars = {
     var_a = "Some variable"
     var_b = "Another variable"
+  }
+
+  inventory_hosts {
+    name      = ansible_host.host.name
+    groups    = ansible_host.host.groups
+    variables = ansible_host.host.variables
+  }
+
+  inventory_groups {
+    name      = ansible_group.group.name
+    children  = ansible_group.group.children
+    variables = ansible_group.group.variables
   }
 }
 ```
@@ -41,6 +54,8 @@ resource "ansible_playbook" "playbook" {
 - `force_handlers` (Boolean) If 'true', run handlers even if a task fails.
 - `groups` (List of String) List of desired groups of hosts on which the playbook will be executed.
 - `ignore_playbook_failure` (Boolean) This parameter is good for testing. Set to 'true' if the desired playbook is meant to fail, but still want the resource to run successfully.
+- `inventory_groups` (Block List, Optional) Inline inventory group definitions that will be written to the temporary inventory file. (see [below for nested schema](#nestedblock--inventory_groups))
+- `inventory_hosts` (Block List, Optional) Inline inventory host definitions that will be written to the temporary inventory file. (see [below for nested schema](#nestedblock--inventory_hosts))
 - `limit` (List of String) List of hosts to include in playbook execution.
 - `replayable` (Boolean) If 'true', the playbook will be executed on every 'terraform apply' and with that, the resource will be recreated. If 'false', the playbook will be executed only on the first 'terraform apply'. Note, that if set to 'true', when doing 'terraform destroy', it might not show in the destroy output, even though the resource still gets destroyed.
 - `tags` (List of String) List of tags of plays and tasks to run.
@@ -59,12 +74,29 @@ resource "ansible_playbook" "playbook" {
 - `id` (String) The ID of this resource.
 - `temp_inventory_file` (String) Path to created temporary inventory file.
 
+<a id="nestedblock--inventory_groups"></a>
+### Nested Schema for `inventory_groups`
+
+Optional:
+
+- `children` (List of String) Child groups.
+- `name` (String) Inventory group name.
+- `variables` (Map of String) Group variables.
+
+<a id="nestedblock--inventory_hosts"></a>
+### Nested Schema for `inventory_hosts`
+
+Optional:
+
+- `groups` (List of String) Groups the host belongs to.
+- `name` (String) Inventory hostname.
+- `variables` (Map of String) Inventory variables for the host.
+
 <a id="nestedblock--timeouts"></a>
 ### Nested Schema for `timeouts`
 
 Optional:
 
 - `create` (String)
-
 
 
