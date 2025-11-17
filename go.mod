@@ -8,7 +8,6 @@ require (
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.32.0
 	github.com/stretchr/testify v1.8.1
-	gopkg.in/ini.v1 v1.67.0
 )
 
 require (
