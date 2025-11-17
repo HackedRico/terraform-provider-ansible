@@ -57,6 +57,58 @@ func resourcePlaybook() *schema.Resource {
 				Optional:    true,
 				Description: "List of desired groups of hosts on which the playbook will be executed.",
 			},
+			"inventory_hosts": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "Inline inventory host definitions that will be materialized in the temporary inventory file.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Inventory hostname.",
+						},
+						"groups": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Elem:        &schema.Schema{Type: schema.TypeString},
+							Description: "Groups the host belongs to.",
+						},
+						"variables": {
+							Type:        schema.TypeMap,
+							Optional:    true,
+							Elem:        &schema.Schema{Type: schema.TypeString},
+							Description: "Inventory variables for the host.",
+						},
+					},
+				},
+			},
+			"inventory_groups": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Description: "Inline inventory group definitions that will be materialized in the temporary inventory file.",
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:        schema.TypeString,
+							Required:    true,
+							Description: "Inventory group name.",
+						},
+						"children": {
+							Type:        schema.TypeList,
+							Optional:    true,
+							Elem:        &schema.Schema{Type: schema.TypeString},
+							Description: "Child groups.",
+						},
+						"variables": {
+							Type:        schema.TypeMap,
+							Optional:    true,
+							Elem:        &schema.Schema{Type: schema.TypeString},
+							Description: "Group variables.",
+						},
+					},
+				},
+			},
 
 			"replayable": {
 				Type:     schema.TypeBool,
@@ -536,6 +588,20 @@ func resourcePlaybookUpdate(ctx context.Context, data *schema.ResourceData, _ in
 			Detail:   ansiblePlaybook,
 		})
 	}
+	inventoryHostsConfig := []interface{}{}
+	if hostsRaw, ok := data.GetOk("inventory_hosts"); ok {
+		inventoryHostsConfig = hostsRaw.([]interface{})
+	}
+	inventoryGroupsConfig := []interface{}{}
+	if groupsRaw, ok := data.GetOk("inventory_groups"); ok {
+		inventoryGroupsConfig = groupsRaw.([]interface{})
+	}
+
+	inventoryHosts, diagsFromHosts := providerutils.ExpandInventoryHosts(inventoryHostsConfig)
+	diags = append(diags, diagsFromHosts...)
+
+	inventoryGroups, diagsFromInventoryGroups := providerutils.ExpandInventoryGroups(inventoryGroupsConfig)
+	diags = append(diags, diagsFromInventoryGroups...)
 
 	ansiblePlaybookBinary, okay := data.Get("ansible_playbook_binary").(string)
 	if !okay {
@@ -593,6 +659,8 @@ func resourcePlaybookUpdate(ctx context.Context, data *schema.ResourceData, _ in
 			name,
 			-1,
 			groups,
+			inventoryHosts,
+			inventoryGroups,
 		)
 		tempInventoryFile = tempFileName
 
